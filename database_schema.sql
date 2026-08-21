@@ -1,0 +1,187 @@
+-- Complete E-Commerce Database Schema (MySQL Compatible for cPanel phpMyAdmin / PostgreSQL)
+
+CREATE TABLE IF NOT EXISTS `users` (
+  `id` VARCHAR(36) PRIMARY KEY,
+  `firebaseUid` VARCHAR(255) UNIQUE NULL,
+  `email` VARCHAR(255) UNIQUE NOT NULL,
+  `password` VARCHAR(255) NULL,
+  `name` VARCHAR(255) NULL,
+  `photoUrl` VARCHAR(500) NULL,
+  `role` ENUM('SUPER_ADMIN', 'CLIENT_ADMIN', 'CUSTOMER', 'STAFF') DEFAULT 'CUSTOMER',
+  `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS `products` (
+  `id` VARCHAR(36) PRIMARY KEY,
+  `title` VARCHAR(255) NOT NULL,
+  `brand` VARCHAR(255) NULL,
+  `urlSlug` VARCHAR(255) UNIQUE NOT NULL,
+  `sku` VARCHAR(100) UNIQUE NOT NULL,
+  `category` VARCHAR(100) NOT NULL,
+  `buyingPrice` DECIMAL(10,2) DEFAULT 0.00,
+  `price` DECIMAL(10,2) NOT NULL,
+  `comparePrice` DECIMAL(10,2) NULL,
+  `stock` INT DEFAULT 0,
+  `lowStockThreshold` INT DEFAULT 5,
+  `status` VARCHAR(50) DEFAULT 'in_stock',
+  `image` TEXT NOT NULL,
+  `galleryImages` JSON NULL,
+  `keywords` JSON NULL,
+  `tags` JSON NULL,
+  `shortDescription` TEXT NULL,
+  `description` LONGTEXT NOT NULL,
+  `features` JSON NULL,
+  `specifications` JSON NULL,
+  `usability` TEXT NULL,
+  `boxContent` JSON NULL,
+  `color` VARCHAR(100) NULL,
+  `material` VARCHAR(100) NULL,
+  `warranty` VARCHAR(100) NULL,
+  `metaTitle` VARCHAR(255) NULL,
+  `metaDescription` TEXT NULL,
+  `seoKeywords` JSON NULL,
+  `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS `categories` (
+  `id` VARCHAR(36) PRIMARY KEY,
+  `name` VARCHAR(255) NOT NULL,
+  `slug` VARCHAR(255) UNIQUE NOT NULL,
+  `description` TEXT NULL,
+  `productCount` INT DEFAULT 0,
+  `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS `orders` (
+  `id` VARCHAR(36) PRIMARY KEY,
+  `orderNumber` VARCHAR(100) UNIQUE NOT NULL,
+  `customerName` VARCHAR(255) NOT NULL,
+  `customerEmail` VARCHAR(255) NULL,
+  `customerPhone` VARCHAR(50) NOT NULL,
+  `shippingAddress` TEXT NOT NULL,
+  `city` VARCHAR(100) NULL,
+  `postalCode` VARCHAR(50) NULL,
+  `subtotal` DECIMAL(10,2) NOT NULL,
+  `shippingFee` DECIMAL(10,2) DEFAULT 0.00,
+  `discount` DECIMAL(10,2) DEFAULT 0.00,
+  `totalAmount` DECIMAL(10,2) NOT NULL,
+  `status` VARCHAR(50) DEFAULT 'pending',
+  `paymentStatus` VARCHAR(50) DEFAULT 'unpaid',
+  `paymentMethod` VARCHAR(50) DEFAULT 'COD',
+  `courierProvider` VARCHAR(50) NULL,
+  `consignmentId` VARCHAR(100) NULL,
+  `trackingCode` VARCHAR(100) NULL,
+  `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS `order_items` (
+  `id` VARCHAR(36) PRIMARY KEY,
+  `orderId` VARCHAR(36) NOT NULL,
+  `productId` VARCHAR(36) NOT NULL,
+  `productName` VARCHAR(255) NOT NULL,
+  `quantity` INT NOT NULL,
+  `price` DECIMAL(10,2) NOT NULL,
+  `image` TEXT NOT NULL,
+  FOREIGN KEY (`orderId`) REFERENCES `orders`(`id`) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS `customers` (
+  `id` VARCHAR(36) PRIMARY KEY,
+  `name` VARCHAR(255) NOT NULL,
+  `email` VARCHAR(255) UNIQUE NOT NULL,
+  `phone` VARCHAR(50) UNIQUE NOT NULL,
+  `totalOrders` INT DEFAULT 0,
+  `totalSpent` DECIMAL(10,2) DEFAULT 0.00,
+  `status` VARCHAR(50) DEFAULT 'active',
+  `avatar` TEXT NULL,
+  `address` TEXT NULL,
+  `joinedAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS `coupons` (
+  `id` VARCHAR(36) PRIMARY KEY,
+  `code` VARCHAR(50) UNIQUE NOT NULL,
+  `type` VARCHAR(50) NOT NULL,
+  `value` DECIMAL(10,2) NOT NULL,
+  `minSpend` DECIMAL(10,2) DEFAULT 0.00,
+  `usageLimit` INT DEFAULT 100,
+  `usedCount` INT DEFAULT 0,
+  `expiryDate` DATETIME NOT NULL,
+  `status` VARCHAR(50) DEFAULT 'active',
+  `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS `inventory_logs` (
+  `id` VARCHAR(36) PRIMARY KEY,
+  `productId` VARCHAR(36) NOT NULL,
+  `productName` VARCHAR(255) NOT NULL,
+  `change` INT NOT NULL,
+  `type` VARCHAR(50) NOT NULL,
+  `note` TEXT NULL,
+  `createdBy` VARCHAR(255) DEFAULT 'System Admin',
+  `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS `banner_cms` (
+  `id` VARCHAR(36) PRIMARY KEY,
+  `title` VARCHAR(255) NOT NULL,
+  `subtitle` VARCHAR(255) NULL,
+  `imageUrl` TEXT NOT NULL,
+  `linkUrl` VARCHAR(255) NULL,
+  `bannerType` VARCHAR(50) NOT NULL,
+  `isActive` TINYINT(1) DEFAULT 1,
+  `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS `sms_logs` (
+  `id` VARCHAR(36) PRIMARY KEY,
+  `phone` VARCHAR(50) NOT NULL,
+  `message` TEXT NOT NULL,
+  `status` VARCHAR(50) NOT NULL,
+  `gateway` VARCHAR(50) NOT NULL,
+  `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS `abandoned_carts` (
+  `id` VARCHAR(36) PRIMARY KEY,
+  `customerName` VARCHAR(255) NULL,
+  `customerPhone` VARCHAR(50) NOT NULL,
+  `cartItems` JSON NOT NULL,
+  `totalAmount` DECIMAL(10,2) NOT NULL,
+  `recovered` TINYINT(1) DEFAULT 0,
+  `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS `activity_logs` (
+  `id` VARCHAR(36) PRIMARY KEY,
+  `userName` VARCHAR(255) NOT NULL,
+  `userRole` VARCHAR(50) NOT NULL,
+  `action` VARCHAR(100) NOT NULL,
+  `details` TEXT NOT NULL,
+  `ipAddress` VARCHAR(50) NULL,
+  `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS `store_settings` (
+  `id` VARCHAR(50) PRIMARY KEY DEFAULT 'default',
+  `storeName` VARCHAR(255) DEFAULT 'My Shop',
+  `storeEmail` VARCHAR(255) DEFAULT 'admin@myshop.com',
+  `storePhone` VARCHAR(50) DEFAULT '+8801700000000',
+  `currency` VARCHAR(10) DEFAULT '৳',
+  `logoUrl` TEXT NULL,
+  `bkashMerchant` VARCHAR(100) NULL,
+  `nagadMerchant` VARCHAR(100) NULL,
+  `stripeKey` VARCHAR(255) NULL,
+  `flatShippingFee` DECIMAL(10,2) DEFAULT 120.00,
+  `freeShippingThreshold` DECIMAL(10,2) DEFAULT 5000.00,
+  `taxRate` DECIMAL(5,2) DEFAULT 5.00,
+  `updatedAt` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);

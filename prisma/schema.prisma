@@ -11,8 +11,9 @@ datasource db {
 
 model User {
   id          String   @id @default(uuid())
-  firebaseUid String   @unique
+  firebaseUid String?  @unique
   email       String   @unique
+  password    String?
   name        String?
   photoUrl    String?
   role        Role     @default(CUSTOMER)
@@ -24,4 +25,184 @@ enum Role {
   SUPER_ADMIN
   CLIENT_ADMIN
   CUSTOMER
+  STAFF
 }
+
+model Product {
+  id                String   @id @default(uuid())
+  title             String
+  brand             String?
+  urlSlug           String   @unique
+  sku               String   @unique
+  category          String
+  buyingPrice       Float    @default(0)
+  price             Float
+  comparePrice      Float?
+  stock             Int      @default(0)
+  lowStockThreshold Int      @default(5)
+  status            String   @default("in_stock") // 'in_stock' | 'low_stock' | 'out_of_stock'
+  image             String
+  galleryImages     String[]
+  keywords          String[]
+  tags              String[]
+  shortDescription  String?
+  description       String
+  features          String[]
+  specifications    Json?
+  usability         String?
+  boxContent        String[]
+  color             String?
+  material          String?
+  warranty          String?
+  metaTitle         String?
+  metaDescription   String?
+  seoKeywords       String[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Category {
+  id           String   @id @default(uuid())
+  name         String
+  slug         String   @unique
+  description  String?
+  productCount Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  orderNumber     String      @unique @default(uuid())
+  customerName    String
+  customerEmail   String?
+  customerPhone   String
+  shippingAddress String
+  city            String?
+  postalCode      String?
+  items           OrderItem[]
+  subtotal        Float
+  shippingFee     Float       @default(0)
+  discount        Float       @default(0)
+  totalAmount     Float
+  status          String      @default("pending") // 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
+  paymentStatus   String      @default("unpaid")  // 'unpaid' | 'paid' | 'refunded'
+  paymentMethod   String      @default("COD")     // 'COD' | 'bKash' | 'Nagad' | 'Stripe'
+  
+  // Courier integration fields
+  courierProvider String?     // 'Steadfast' | 'Pathao' | 'RedX'
+  consignmentId   String?
+  trackingCode    String?
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model OrderItem {
+  id          String   @id @default(uuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  productName String
+  quantity    Int
+  price       Float
+  image       String
+}
+
+model Customer {
+  id          String   @id @default(uuid())
+  name        String
+  email       String   @unique
+  phone       String   @unique
+  totalOrders Int      @default(0)
+  totalSpent  Float    @default(0)
+  status      String   @default("active") // 'active' | 'blocked'
+  avatar      String?
+  address     String?
+  joinedAt    DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Coupon {
+  id         String   @id @default(uuid())
+  code       String   @unique
+  type       String   // 'percentage' | 'fixed'
+  value      Float
+  minSpend   Float    @default(0)
+  usageLimit Int      @default(100)
+  usedCount  Int      @default(0)
+  expiryDate DateTime
+  status     String   @default("active") // 'active' | 'expired' | 'disabled'
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model InventoryLog {
+  id          String   @id @default(uuid())
+  productId   String
+  productName String
+  change      Int
+  type        String   // 'restock' | 'sale' | 'adjustment'
+  note        String?
+  createdBy   String   @default("System Admin")
+  createdAt   DateTime @default(now())
+}
+
+model BannerCMS {
+  id          String   @id @default(uuid())
+  title       String
+  subtitle    String?
+  imageUrl    String
+  linkUrl     String?
+  bannerType  String   // 'hero' | 'promo' | 'announcement' | 'popup'
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SmsLog {
+  id          String   @id @default(uuid())
+  phone       String
+  message     String
+  status      String   // 'sent' | 'failed' | 'pending'
+  gateway     String   // 'SSL Wireless' | 'Teletalk' | 'Alpha SMS'
+  createdAt   DateTime @default(now())
+}
+
+model AbandonedCart {
+  id            String   @id @default(uuid())
+  customerName  String?
+  customerPhone String
+  cartItems     Json
+  totalAmount   Float
+  recovered     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  userName    String
+  userRole    String
+  action      String   // e.g. 'PRODUCT_CREATED', 'PRICE_UPDATED', 'LOGIN'
+  details     String
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+}
+
+model StoreSettings {
+  id                    String   @id @default("default")
+  storeName             String   @default("My Shop")
+  storeEmail            String   @default("admin@myshop.com")
+  storePhone            String   @default("+8801700000000")
+  currency              String   @default("৳")
+  logoUrl               String?
+  bkashMerchant         String?
+  nagadMerchant         String?
+  stripeKey             String?
+  flatShippingFee       Float    @default(120)
+  freeShippingThreshold Float    @default(5000)
+  taxRate               Float    @default(5)
+  updatedAt             DateTime @updatedAt
+}
+
