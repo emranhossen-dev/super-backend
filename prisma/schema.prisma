@@ -1,208 +1,187 @@
-// Prisma Schema for Multi-Tenant Website Builder Backend
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "mysql"
 }
 
-model User {
-  id          String   @id @default(uuid())
-  firebaseUid String?  @unique
-  email       String   @unique
-  password    String?
-  name        String?
-  photoUrl    String?
-  role        Role     @default(CUSTOMER)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model abandoned_carts {
+  id            String    @id @db.VarChar(36)
+  customerName  String?   @db.VarChar(255)
+  customerPhone String    @db.VarChar(50)
+  cartItems     String    @db.LongText
+  totalAmount   Decimal   @db.Decimal(10, 2)
+  recovered     Boolean?  @default(false)
+  createdAt     DateTime? @default(now()) @db.DateTime(0)
+  updatedAt     DateTime? @default(now()) @db.DateTime(0)
 }
 
-enum Role {
+model activity_logs {
+  id        String    @id @db.VarChar(36)
+  userName  String    @db.VarChar(255)
+  userRole  String    @db.VarChar(50)
+  action    String    @db.VarChar(100)
+  details   String    @db.Text
+  ipAddress String?   @db.VarChar(50)
+  createdAt DateTime? @default(now()) @db.DateTime(0)
+}
+
+model banner_cms {
+  id         String    @id @db.VarChar(36)
+  title      String    @db.VarChar(255)
+  subtitle   String?   @db.VarChar(255)
+  imageUrl   String    @db.Text
+  linkUrl    String?   @db.VarChar(255)
+  bannerType String    @db.VarChar(50)
+  isActive   Boolean?  @default(true)
+  createdAt  DateTime? @default(now()) @db.DateTime(0)
+  updatedAt  DateTime? @default(now()) @db.DateTime(0)
+}
+
+model categories {
+  id           String    @id @db.VarChar(36)
+  name         String    @db.VarChar(255)
+  slug         String    @unique(map: "slug") @db.VarChar(255)
+  description  String?   @db.Text
+  productCount Int?      @default(0)
+  createdAt    DateTime? @default(now()) @db.DateTime(0)
+  updatedAt    DateTime? @default(now()) @db.DateTime(0)
+}
+
+model coupons {
+  id         String    @id @db.VarChar(36)
+  code       String    @unique(map: "code") @db.VarChar(50)
+  type       String    @db.VarChar(50)
+  value      Decimal   @db.Decimal(10, 2)
+  minSpend   Decimal?  @default(0.00) @db.Decimal(10, 2)
+  usageLimit Int?      @default(100)
+  usedCount  Int?      @default(0)
+  expiryDate DateTime  @db.DateTime(0)
+  status     String?   @default("active") @db.VarChar(50)
+  createdAt  DateTime? @default(now()) @db.DateTime(0)
+  updatedAt  DateTime? @default(now()) @db.DateTime(0)
+}
+
+model customers {
+  id          String    @id @db.VarChar(36)
+  name        String    @db.VarChar(255)
+  email       String    @unique(map: "email") @db.VarChar(255)
+  phone       String    @unique(map: "phone") @db.VarChar(50)
+  totalOrders Int?      @default(0)
+  totalSpent  Decimal?  @default(0.00) @db.Decimal(10, 2)
+  status      String?   @default("active") @db.VarChar(50)
+  avatar      String?   @db.Text
+  address     String?   @db.Text
+  joinedAt    DateTime? @default(now()) @db.DateTime(0)
+  updatedAt   DateTime? @default(now()) @db.DateTime(0)
+}
+
+model inventory_logs {
+  id          String    @id @db.VarChar(36)
+  productId   String    @db.VarChar(36)
+  productName String    @db.VarChar(255)
+  change      Int
+  type        String    @db.VarChar(50)
+  note        String?   @db.Text
+  createdBy   String?   @default("System Admin") @db.VarChar(255)
+  createdAt   DateTime? @default(now()) @db.DateTime(0)
+}
+
+model order_items {
+  id          String  @id @db.VarChar(36)
+  orderId     String  @db.VarChar(36)
+  productId   String  @db.VarChar(36)
+  productName String  @db.VarChar(255)
+  quantity    Int
+  price       Decimal @db.Decimal(10, 2)
+  image       String  @db.Text
+  orders      orders  @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "order_items_ibfk_1")
+
+  @@index([orderId], map: "orderId")
+}
+
+model orders {
+  id              String        @id @db.VarChar(36)
+  orderNumber     String        @unique(map: "orderNumber") @db.VarChar(100)
+  customerName    String        @db.VarChar(255)
+  customerEmail   String?       @db.VarChar(255)
+  customerPhone   String        @db.VarChar(50)
+  shippingAddress String        @db.Text
+  city            String?       @db.VarChar(100)
+  postalCode      String?       @db.VarChar(50)
+  subtotal        Decimal       @db.Decimal(10, 2)
+  shippingFee     Decimal?      @default(0.00) @db.Decimal(10, 2)
+  discount        Decimal?      @default(0.00) @db.Decimal(10, 2)
+  totalAmount     Decimal       @db.Decimal(10, 2)
+  status          String?       @default("pending") @db.VarChar(50)
+  paymentStatus   String?       @default("unpaid") @db.VarChar(50)
+  paymentMethod   String?       @default("COD") @db.VarChar(50)
+  courierProvider String?       @db.VarChar(50)
+  consignmentId   String?       @db.VarChar(100)
+  trackingCode    String?       @db.VarChar(100)
+  createdAt       DateTime?     @default(now()) @db.DateTime(0)
+  updatedAt       DateTime?     @default(now()) @db.DateTime(0)
+  order_items     order_items[]
+}
+
+model products {
+  id                String    @id @db.VarChar(36)
+  title             String    @db.VarChar(255)
+  brand             String?   @db.VarChar(255)
+  urlSlug           String    @unique(map: "urlSlug") @db.VarChar(255)
+  sku               String    @unique(map: "sku") @db.VarChar(100)
+  category          String    @db.VarChar(100)
+  buyingPrice       Decimal?  @default(0.00) @db.Decimal(10, 2)
+  price             Decimal   @db.Decimal(10, 2)
+  comparePrice      Decimal?  @db.Decimal(10, 2)
+  stock             Int?      @default(0)
+  lowStockThreshold Int?      @default(5)
+  status            String?   @default("in_stock") @db.VarChar(50)
+  image             String    @db.Text
+  galleryImages     String?   @db.LongText
+  keywords          String?   @db.LongText
+  tags              String?   @db.LongText
+  shortDescription  String?   @db.Text
+  description       String    @db.LongText
+  features          String?   @db.LongText
+  specifications    String?   @db.LongText
+  usability         String?   @db.Text
+  boxContent        String?   @db.LongText
+  color             String?   @db.VarChar(100)
+  material          String?   @db.VarChar(100)
+  warranty          String?   @db.VarChar(100)
+  metaTitle         String?   @db.VarChar(255)
+  metaDescription   String?   @db.Text
+  seoKeywords       String?   @db.LongText
+  createdAt         DateTime? @default(now()) @db.DateTime(0)
+  updatedAt         DateTime? @default(now()) @db.DateTime(0)
+}
+
+model sms_logs {
+  id        String    @id @db.VarChar(36)
+  phone     String    @db.VarChar(50)
+  message   String    @db.Text
+  status    String    @db.VarChar(50)
+  gateway   String    @db.VarChar(50)
+  createdAt DateTime? @default(now()) @db.DateTime(0)
+}
+
+model users {
+  id          String      @id @db.VarChar(36)
+  firebaseUid String?     @unique(map: "firebaseUid") @db.VarChar(255)
+  email       String      @unique(map: "email") @db.VarChar(255)
+  password    String?     @db.VarChar(255)
+  name        String?     @db.VarChar(255)
+  photoUrl    String?     @db.VarChar(500)
+  role        users_role? @default(CUSTOMER)
+  createdAt   DateTime?   @default(now()) @db.DateTime(0)
+  updatedAt   DateTime?   @default(now()) @db.DateTime(0)
+}
+
+enum users_role {
   SUPER_ADMIN
   CLIENT_ADMIN
   CUSTOMER
   STAFF
 }
-
-model Product {
-  id                String   @id @default(uuid())
-  title             String
-  brand             String?
-  urlSlug           String   @unique
-  sku               String   @unique
-  category          String
-  buyingPrice       Float    @default(0)
-  price             Float
-  comparePrice      Float?
-  stock             Int      @default(0)
-  lowStockThreshold Int      @default(5)
-  status            String   @default("in_stock") // 'in_stock' | 'low_stock' | 'out_of_stock'
-  image             String
-  galleryImages     String[]
-  keywords          String[]
-  tags              String[]
-  shortDescription  String?
-  description       String
-  features          String[]
-  specifications    Json?
-  usability         String?
-  boxContent        String[]
-  color             String?
-  material          String?
-  warranty          String?
-  metaTitle         String?
-  metaDescription   String?
-  seoKeywords       String[]
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-}
-
-model Category {
-  id           String   @id @default(uuid())
-  name         String
-  slug         String   @unique
-  description  String?
-  productCount Int      @default(0)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-}
-
-model Order {
-  id              String      @id @default(uuid())
-  orderNumber     String      @unique @default(uuid())
-  customerName    String
-  customerEmail   String?
-  customerPhone   String
-  shippingAddress String
-  city            String?
-  postalCode      String?
-  items           OrderItem[]
-  subtotal        Float
-  shippingFee     Float       @default(0)
-  discount        Float       @default(0)
-  totalAmount     Float
-  status          String      @default("pending") // 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
-  paymentStatus   String      @default("unpaid")  // 'unpaid' | 'paid' | 'refunded'
-  paymentMethod   String      @default("COD")     // 'COD' | 'bKash' | 'Nagad' | 'Stripe'
-  
-  // Courier integration fields
-  courierProvider String?     // 'Steadfast' | 'Pathao' | 'RedX'
-  consignmentId   String?
-  trackingCode    String?
-
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-}
-
-model OrderItem {
-  id          String   @id @default(uuid())
-  orderId     String
-  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId   String
-  productName String
-  quantity    Int
-  price       Float
-  image       String
-}
-
-model Customer {
-  id          String   @id @default(uuid())
-  name        String
-  email       String   @unique
-  phone       String   @unique
-  totalOrders Int      @default(0)
-  totalSpent  Float    @default(0)
-  status      String   @default("active") // 'active' | 'blocked'
-  avatar      String?
-  address     String?
-  joinedAt    DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model Coupon {
-  id         String   @id @default(uuid())
-  code       String   @unique
-  type       String   // 'percentage' | 'fixed'
-  value      Float
-  minSpend   Float    @default(0)
-  usageLimit Int      @default(100)
-  usedCount  Int      @default(0)
-  expiryDate DateTime
-  status     String   @default("active") // 'active' | 'expired' | 'disabled'
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-}
-
-model InventoryLog {
-  id          String   @id @default(uuid())
-  productId   String
-  productName String
-  change      Int
-  type        String   // 'restock' | 'sale' | 'adjustment'
-  note        String?
-  createdBy   String   @default("System Admin")
-  createdAt   DateTime @default(now())
-}
-
-model BannerCMS {
-  id          String   @id @default(uuid())
-  title       String
-  subtitle    String?
-  imageUrl    String
-  linkUrl     String?
-  bannerType  String   // 'hero' | 'promo' | 'announcement' | 'popup'
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model SmsLog {
-  id          String   @id @default(uuid())
-  phone       String
-  message     String
-  status      String   // 'sent' | 'failed' | 'pending'
-  gateway     String   // 'SSL Wireless' | 'Teletalk' | 'Alpha SMS'
-  createdAt   DateTime @default(now())
-}
-
-model AbandonedCart {
-  id            String   @id @default(uuid())
-  customerName  String?
-  customerPhone String
-  cartItems     Json
-  totalAmount   Float
-  recovered     Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-}
-
-model ActivityLog {
-  id          String   @id @default(uuid())
-  userName    String
-  userRole    String
-  action      String   // e.g. 'PRODUCT_CREATED', 'PRICE_UPDATED', 'LOGIN'
-  details     String
-  ipAddress   String?
-  createdAt   DateTime @default(now())
-}
-
-model StoreSettings {
-  id                    String   @id @default("default")
-  storeName             String   @default("My Shop")
-  storeEmail            String   @default("admin@myshop.com")
-  storePhone            String   @default("+8801700000000")
-  currency              String   @default("৳")
-  logoUrl               String?
-  bkashMerchant         String?
-  nagadMerchant         String?
-  stripeKey             String?
-  flatShippingFee       Float    @default(120)
-  freeShippingThreshold Float    @default(5000)
-  taxRate               Float    @default(5)
-  updatedAt             DateTime @updatedAt
-}
-
