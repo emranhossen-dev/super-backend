@@ -3,181 +3,181 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model abandoned_carts {
-  id            String    @id @db.VarChar(36)
-  customerName  String?   @db.VarChar(255)
-  customerPhone String    @db.VarChar(50)
-  cartItems     String    @db.LongText
+  id            String    @id @default(uuid())
+  customerName  String?
+  customerPhone String
+  cartItems     String
   totalAmount   Decimal   @db.Decimal(10, 2)
   recovered     Boolean?  @default(false)
-  createdAt     DateTime? @default(now()) @db.DateTime(0)
-  updatedAt     DateTime? @default(now()) @db.DateTime(0)
+  createdAt     DateTime? @default(now())
+  updatedAt     DateTime? @default(now()) @updatedAt
 }
 
 model activity_logs {
-  id        String    @id @db.VarChar(36)
-  userName  String    @db.VarChar(255)
-  userRole  String    @db.VarChar(50)
-  action    String    @db.VarChar(100)
-  details   String    @db.Text
-  ipAddress String?   @db.VarChar(50)
-  createdAt DateTime? @default(now()) @db.DateTime(0)
+  id        String    @id @default(uuid())
+  userName  String
+  userRole  String
+  action    String
+  details   String
+  ipAddress String?
+  createdAt DateTime? @default(now())
 }
 
 model banner_cms {
-  id         String    @id @db.VarChar(36)
-  title      String    @db.VarChar(255)
-  subtitle   String?   @db.VarChar(255)
-  imageUrl   String    @db.Text
-  linkUrl    String?   @db.VarChar(255)
-  bannerType String    @db.VarChar(50)
+  id         String    @id @default(uuid())
+  title      String
+  subtitle   String?
+  imageUrl   String
+  linkUrl    String?
+  bannerType String
   isActive   Boolean?  @default(true)
-  createdAt  DateTime? @default(now()) @db.DateTime(0)
-  updatedAt  DateTime? @default(now()) @db.DateTime(0)
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @default(now()) @updatedAt
 }
 
 model categories {
-  id           String    @id @db.VarChar(36)
-  name         String    @db.VarChar(255)
-  slug         String    @unique(map: "slug") @db.VarChar(255)
-  description  String?   @db.Text
+  id           String    @id @default(uuid())
+  name         String
+  slug         String    @unique
+  description  String?
   productCount Int?      @default(0)
-  createdAt    DateTime? @default(now()) @db.DateTime(0)
-  updatedAt    DateTime? @default(now()) @db.DateTime(0)
+  createdAt    DateTime? @default(now())
+  updatedAt    DateTime? @default(now()) @updatedAt
 }
 
 model coupons {
-  id         String    @id @db.VarChar(36)
-  code       String    @unique(map: "code") @db.VarChar(50)
-  type       String    @db.VarChar(50)
+  id         String    @id @default(uuid())
+  code       String    @unique
+  type       String
   value      Decimal   @db.Decimal(10, 2)
   minSpend   Decimal?  @default(0.00) @db.Decimal(10, 2)
   usageLimit Int?      @default(100)
   usedCount  Int?      @default(0)
-  expiryDate DateTime  @db.DateTime(0)
-  status     String?   @default("active") @db.VarChar(50)
-  createdAt  DateTime? @default(now()) @db.DateTime(0)
-  updatedAt  DateTime? @default(now()) @db.DateTime(0)
+  expiryDate DateTime
+  status     String?   @default("active")
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @default(now()) @updatedAt
 }
 
 model customers {
-  id          String    @id @db.VarChar(36)
-  name        String    @db.VarChar(255)
-  email       String    @unique(map: "email") @db.VarChar(255)
-  phone       String    @unique(map: "phone") @db.VarChar(50)
+  id          String    @id @default(uuid())
+  name        String
+  email       String    @unique
+  phone       String    @unique
   totalOrders Int?      @default(0)
   totalSpent  Decimal?  @default(0.00) @db.Decimal(10, 2)
-  status      String?   @default("active") @db.VarChar(50)
-  avatar      String?   @db.Text
-  address     String?   @db.Text
-  joinedAt    DateTime? @default(now()) @db.DateTime(0)
-  updatedAt   DateTime? @default(now()) @db.DateTime(0)
+  status      String?   @default("active")
+  avatar      String?
+  address     String?
+  joinedAt    DateTime? @default(now())
+  updatedAt   DateTime? @default(now()) @updatedAt
 }
 
 model inventory_logs {
-  id          String    @id @db.VarChar(36)
-  productId   String    @db.VarChar(36)
-  productName String    @db.VarChar(255)
+  id          String    @id @default(uuid())
+  productId   String
+  productName String
   change      Int
-  type        String    @db.VarChar(50)
-  note        String?   @db.Text
-  createdBy   String?   @default("System Admin") @db.VarChar(255)
-  createdAt   DateTime? @default(now()) @db.DateTime(0)
+  type        String
+  note        String?
+  createdBy   String?   @default("System Admin")
+  createdAt   DateTime? @default(now())
 }
 
 model order_items {
-  id          String  @id @db.VarChar(36)
-  orderId     String  @db.VarChar(36)
-  productId   String  @db.VarChar(36)
-  productName String  @db.VarChar(255)
+  id          String  @id @default(uuid())
+  orderId     String
+  productId   String
+  productName String
   quantity    Int
   price       Decimal @db.Decimal(10, 2)
-  image       String  @db.Text
-  orders      orders  @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "order_items_ibfk_1")
+  image       String
+  orders      orders  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-  @@index([orderId], map: "orderId")
+  @@index([orderId])
 }
 
 model orders {
-  id              String        @id @db.VarChar(36)
-  orderNumber     String        @unique(map: "orderNumber") @db.VarChar(100)
-  customerName    String        @db.VarChar(255)
-  customerEmail   String?       @db.VarChar(255)
-  customerPhone   String        @db.VarChar(50)
-  shippingAddress String        @db.Text
-  city            String?       @db.VarChar(100)
-  postalCode      String?       @db.VarChar(50)
+  id              String        @id @default(uuid())
+  orderNumber     String        @unique
+  customerName    String
+  customerEmail   String?
+  customerPhone   String
+  shippingAddress String
+  city            String?
+  postalCode      String?
   subtotal        Decimal       @db.Decimal(10, 2)
   shippingFee     Decimal?      @default(0.00) @db.Decimal(10, 2)
   discount        Decimal?      @default(0.00) @db.Decimal(10, 2)
   totalAmount     Decimal       @db.Decimal(10, 2)
-  status          String?       @default("pending") @db.VarChar(50)
-  paymentStatus   String?       @default("unpaid") @db.VarChar(50)
-  paymentMethod   String?       @default("COD") @db.VarChar(50)
-  courierProvider String?       @db.VarChar(50)
-  consignmentId   String?       @db.VarChar(100)
-  trackingCode    String?       @db.VarChar(100)
-  createdAt       DateTime?     @default(now()) @db.DateTime(0)
-  updatedAt       DateTime?     @default(now()) @db.DateTime(0)
+  status          String?       @default("pending")
+  paymentStatus   String?       @default("unpaid")
+  paymentMethod   String?       @default("COD")
+  courierProvider String?
+  consignmentId   String?
+  trackingCode    String?
+  createdAt       DateTime?     @default(now())
+  updatedAt       DateTime?     @default(now()) @updatedAt
   order_items     order_items[]
 }
 
 model products {
-  id                String    @id @db.VarChar(36)
-  title             String    @db.VarChar(255)
-  brand             String?   @db.VarChar(255)
-  urlSlug           String    @unique(map: "urlSlug") @db.VarChar(255)
-  sku               String    @unique(map: "sku") @db.VarChar(100)
-  category          String    @db.VarChar(100)
+  id                String    @id @default(uuid())
+  title             String
+  brand             String?
+  urlSlug           String    @unique
+  sku               String    @unique
+  category          String
   buyingPrice       Decimal?  @default(0.00) @db.Decimal(10, 2)
   price             Decimal   @db.Decimal(10, 2)
   comparePrice      Decimal?  @db.Decimal(10, 2)
   stock             Int?      @default(0)
   lowStockThreshold Int?      @default(5)
-  status            String?   @default("in_stock") @db.VarChar(50)
-  image             String    @db.Text
-  galleryImages     String?   @db.LongText
-  keywords          String?   @db.LongText
-  tags              String?   @db.LongText
-  shortDescription  String?   @db.Text
-  description       String    @db.LongText
-  features          String?   @db.LongText
-  specifications    String?   @db.LongText
-  usability         String?   @db.Text
-  boxContent        String?   @db.LongText
-  color             String?   @db.VarChar(100)
-  material          String?   @db.VarChar(100)
-  warranty          String?   @db.VarChar(100)
-  metaTitle         String?   @db.VarChar(255)
-  metaDescription   String?   @db.Text
-  seoKeywords       String?   @db.LongText
-  createdAt         DateTime? @default(now()) @db.DateTime(0)
-  updatedAt         DateTime? @default(now()) @db.DateTime(0)
+  status            String?   @default("in_stock")
+  image             String
+  galleryImages     String?
+  keywords          String?
+  tags              String?
+  shortDescription  String?
+  description       String
+  features          String?
+  specifications    String?
+  usability         String?
+  boxContent        String?
+  color             String?
+  material          String?
+  warranty          String?
+  metaTitle         String?
+  metaDescription   String?
+  seoKeywords       String?
+  createdAt         DateTime? @default(now())
+  updatedAt         DateTime? @default(now()) @updatedAt
 }
 
 model sms_logs {
-  id        String    @id @db.VarChar(36)
-  phone     String    @db.VarChar(50)
-  message   String    @db.Text
-  status    String    @db.VarChar(50)
-  gateway   String    @db.VarChar(50)
-  createdAt DateTime? @default(now()) @db.DateTime(0)
+  id        String    @id @default(uuid())
+  phone     String
+  message   String
+  status    String
+  gateway   String
+  createdAt DateTime? @default(now())
 }
 
 model users {
-  id          String      @id @db.VarChar(36)
-  firebaseUid String?     @unique(map: "firebaseUid") @db.VarChar(255)
-  email       String      @unique(map: "email") @db.VarChar(255)
-  password    String?     @db.VarChar(255)
-  name        String?     @db.VarChar(255)
-  photoUrl    String?     @db.VarChar(500)
+  id          String      @id @default(uuid())
+  firebaseUid String?     @unique
+  email       String      @unique
+  password    String?
+  name        String?
+  photoUrl    String?
   role        users_role? @default(CUSTOMER)
-  createdAt   DateTime?   @default(now()) @db.DateTime(0)
-  updatedAt   DateTime?   @default(now()) @db.DateTime(0)
+  createdAt   DateTime?   @default(now())
+  updatedAt   DateTime?   @default(now()) @updatedAt
 }
 
 enum users_role {
