@@ -36,7 +36,7 @@ async function bootstrap() {
     allowedHeaders: 'Content-Type, Accept, Authorization',
   });
 
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   console.log(`[Backend] Server running on port ${port} with prefix /${apiPrefix}`);
 }
 bootstrap();
