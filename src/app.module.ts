@@ -7,6 +7,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ProductsModule } from './products/products.module';
 import { OrdersModule } from './orders/orders.module';
 import { CategoriesModule } from './categories/categories.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { CategoriesModule } from './categories/categories.module';
     ProductsModule,
     OrdersModule,
     CategoriesModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

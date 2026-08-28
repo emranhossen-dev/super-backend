@@ -3,9 +3,15 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 
+import { json, urlencoded } from 'express';
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
+
+  // Increase payload limit to 50MB to prevent 413 Payload Too Large
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ limit: '50mb', extended: true }));
 
   const port = configService.get<number>('PORT') || 5000;
   const apiPrefix = configService.get<string>('API_PREFIX') || 'api/v1';

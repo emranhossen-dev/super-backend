@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto, UpdateOrderStatusDto } from './dto/create-order.dto';
+import { NotificationsGateway } from '../notifications/notifications.gateway';
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsGateway: NotificationsGateway,
+  ) {}
 
   async create(dto: CreateOrderDto) {
     if (!dto.items || dto.items.length === 0) {
@@ -72,6 +76,19 @@ export class OrdersService {
           totalSpent: dto.totalAmount,
         },
       });
+    }
+
+    // Broadcast Real-Time Socket.io Notification to connected Admin Panel clients
+    try {
+      this.notificationsGateway.sendNotification({
+        id: `notif_${Date.now()}`,
+        title: `New Order #${order.orderNumber}`,
+        message: `Customer ${order.customerName} placed an order worth ৳ ${order.totalAmount.toLocaleString()} via ${order.paymentMethod}`,
+        timestamp: 'Just now',
+        type: 'order',
+      });
+    } catch (err) {
+      console.warn('Real-time socket notification broadcast fallback:', err);
     }
 
     return order;
