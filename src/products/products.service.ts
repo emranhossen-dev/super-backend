@@ -4,9 +4,21 @@ import { CreateProductDto, UpdateProductDto } from './dto/create-product.dto';
 
 @Injectable()
 export class ProductsService {
+  private productsCache: any = null;
+  private cacheTimestamp: number = 0;
+  private readonly CACHE_TTL_MS = 60 * 1000; // 60 seconds microsecond RAM cache
+
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(category?: string, search?: string) {
+    const isDefaultQuery = (!category || category === 'All') && (!search || search.trim() === '');
+    const now = Date.now();
+
+    // 1ms RAM Response if cache is valid
+    if (isDefaultQuery && this.productsCache && now - this.cacheTimestamp < this.CACHE_TTL_MS) {
+      return this.productsCache;
+    }
+
     const where: any = {};
 
     if (category && category !== 'All') {
@@ -21,7 +33,7 @@ export class ProductsService {
       ];
     }
 
-    return this.prisma.products.findMany({
+    const results = await this.prisma.products.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       select: {
@@ -42,6 +54,13 @@ export class ProductsService {
         createdAt: true,
       },
     });
+
+    if (isDefaultQuery) {
+      this.productsCache = results;
+      this.cacheTimestamp = now;
+    }
+
+    return results;
   }
 
   async findOneBySlugOrId(identifier: string) {
@@ -68,7 +87,7 @@ export class ProductsService {
       throw new ConflictException(`Product URL Slug '${slug}' already exists`);
     }
 
-    return this.prisma.products.create({
+    const created = await this.prisma.products.create({
       data: {
         id,
         title: dto.title,
@@ -90,21 +109,33 @@ export class ProductsService {
         warranty: dto.warranty || null,
       },
     });
+
+    // Invalidate cache immediately on new product creation
+    this.productsCache = null;
+    return created;
   }
 
   async update(id: string, dto: UpdateProductDto) {
     await this.findOneBySlugOrId(id);
 
-    return this.prisma.products.update({
+    const updated = await this.prisma.products.update({
       where: { id },
       data: dto as any,
     });
+
+    // Invalidate cache immediately on update
+    this.productsCache = null;
+    return updated;
   }
 
   async remove(id: string) {
     await this.findOneBySlugOrId(id);
-    return this.prisma.products.delete({
+    const deleted = await this.prisma.products.delete({
       where: { id },
     });
+
+    // Invalidate cache immediately on delete
+    this.productsCache = null;
+    return deleted;
   }
 }
