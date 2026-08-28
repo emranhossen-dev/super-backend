@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -38,5 +39,18 @@ export class OrdersController {
     @Body() dto: UpdateOrderStatusDto,
   ) {
     return this.ordersService.updateStatus(id, dto);
+  }
+
+  @Patch(':id')
+  update(
+    @Param('id') id: string,
+    @Body() updates: any,
+  ) {
+    return this.ordersService.update(id, updates);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.ordersService.remove(id);
   }
 }

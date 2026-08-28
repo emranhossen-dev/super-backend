@@ -10,13 +10,30 @@ export class OrdersService {
     private readonly notificationsGateway: NotificationsGateway,
   ) {}
 
+  private async getNextOrderNumber(): Promise<number> {
+    const allOrders = await this.prisma.orders.findMany({
+      select: { id: true, orderNumber: true },
+    });
+
+    let maxId = 979;
+    allOrders.forEach((o) => {
+      const num1 = parseInt(o.id.replace(/[^0-9]/g, ''), 10);
+      const num2 = parseInt(o.orderNumber.replace(/[^0-9]/g, ''), 10);
+      if (!isNaN(num1) && num1 > maxId) maxId = num1;
+      if (!isNaN(num2) && num2 > maxId) maxId = num2;
+    });
+
+    return maxId + 1;
+  }
+
   async create(dto: CreateOrderDto) {
     if (!dto.items || dto.items.length === 0) {
       throw new BadRequestException('Order must contain at least one item');
     }
 
-    const orderId = `ord-${Date.now()}`;
-    const orderNumber = `ORD-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
+    const nextOrderNum = await this.getNextOrderNumber();
+    const orderId = String(nextOrderNum);
+    const orderNumber = String(nextOrderNum);
 
     const order = await this.prisma.orders.create({
       data: {
@@ -52,30 +69,34 @@ export class OrdersService {
     });
 
     // Update customer record or create new customer
-    const existingCustomer = await this.prisma.customers.findFirst({
-      where: { phone: dto.customerPhone },
-    });
+    try {
+      const existingCustomer = await (this.prisma as any).customers.findFirst({
+        where: { phone: dto.customerPhone },
+      });
 
-    if (existingCustomer) {
-      await this.prisma.customers.update({
-        where: { id: existingCustomer.id },
-        data: {
-          totalOrders: { increment: 1 },
-          totalSpent: { increment: dto.totalAmount },
-        },
-      });
-    } else {
-      await this.prisma.customers.create({
-        data: {
-          id: `cust-${Date.now()}`,
-          name: dto.customerName,
-          phone: dto.customerPhone,
-          email: dto.customerEmail || `${dto.customerPhone}@customer.store`,
-          address: dto.shippingAddress,
-          totalOrders: 1,
-          totalSpent: dto.totalAmount,
-        },
-      });
+      if (existingCustomer) {
+        await (this.prisma as any).customers.update({
+          where: { id: existingCustomer.id },
+          data: {
+            totalOrders: { increment: 1 },
+            totalSpent: { increment: dto.totalAmount },
+          },
+        });
+      } else {
+        await (this.prisma as any).customers.create({
+          data: {
+            id: `cust-${Date.now()}`,
+            name: dto.customerName,
+            phone: dto.customerPhone,
+            email: dto.customerEmail || `${dto.customerPhone}@customer.store`,
+            address: dto.shippingAddress,
+            totalOrders: 1,
+            totalSpent: dto.totalAmount,
+          },
+        });
+      }
+    } catch (e) {
+      console.warn('Customer upsert fallback:', e);
     }
 
     // Broadcast Real-Time Socket.io Notification to connected Admin Panel clients
@@ -97,15 +118,17 @@ export class OrdersService {
   async findAll(status?: string, search?: string) {
     const where: any = {};
 
-    if (status && status !== 'All') {
-      where.status = status;
+    if (status && status !== 'All' && status !== 'all') {
+      where.status = status.toLowerCase();
     }
 
     if (search && search.trim() !== '') {
+      const s = search.trim();
       where.OR = [
-        { orderNumber: { contains: search } },
-        { customerName: { contains: search } },
-        { customerPhone: { contains: search } },
+        { orderNumber: { contains: s } },
+        { id: { contains: s } },
+        { customerName: { contains: s } },
+        { customerPhone: { contains: s } },
       ];
     }
 
@@ -132,17 +155,50 @@ export class OrdersService {
   }
 
   async updateStatus(id: string, dto: UpdateOrderStatusDto) {
-    await this.findOne(id);
+    const order = await this.findOne(id);
 
     return this.prisma.orders.update({
-      where: { id },
+      where: { id: order.id },
       data: {
-        status: dto.status,
-        ...(dto.paymentStatus && { paymentStatus: dto.paymentStatus }),
+        status: dto.status.toLowerCase(),
+        ...(dto.paymentStatus && { paymentStatus: dto.paymentStatus.toLowerCase() }),
         ...(dto.courierProvider && { courierProvider: dto.courierProvider }),
         ...(dto.trackingCode && { trackingCode: dto.trackingCode }),
       },
       include: { order_items: true },
+    });
+  }
+
+  async update(id: string, updates: any) {
+    const order = await this.findOne(id);
+
+    return this.prisma.orders.update({
+      where: { id: order.id },
+      data: {
+        ...(updates.customerName && { customerName: updates.customerName }),
+        ...(updates.customerEmail && { customerEmail: updates.customerEmail }),
+        ...(updates.customerPhone && { customerPhone: updates.customerPhone }),
+        ...(updates.shippingAddress && { shippingAddress: updates.shippingAddress }),
+        ...(updates.city && { city: updates.city }),
+        ...(updates.status && { status: updates.status.toLowerCase() }),
+        ...(updates.paymentStatus && { paymentStatus: updates.paymentStatus.toLowerCase() }),
+        ...(updates.totalAmount && { totalAmount: Number(updates.totalAmount) }),
+      },
+      include: { order_items: true },
+    });
+  }
+
+  async remove(id: string) {
+    const order = await this.findOne(id);
+
+    try {
+      await this.prisma.order_items.deleteMany({
+        where: { orderId: order.id },
+      });
+    } catch (e) {}
+
+    return this.prisma.orders.delete({
+      where: { id: order.id },
     });
   }
 }
