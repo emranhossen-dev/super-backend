@@ -15,15 +15,32 @@ export class ProductsService {
 
     if (search && search.trim() !== '') {
       where.OR = [
-        { title: { contains: search } },
-        { description: { contains: search } },
-        { category: { contains: search } },
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { category: { contains: search, mode: 'insensitive' } },
       ];
     }
 
     return this.prisma.products.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        title: true,
+        brand: true,
+        urlSlug: true,
+        sku: true,
+        category: true,
+        buyingPrice: true,
+        price: true,
+        comparePrice: true,
+        stock: true,
+        status: true,
+        image: true,
+        shortDescription: true,
+        description: true,
+        createdAt: true,
+      },
     });
   }
 
