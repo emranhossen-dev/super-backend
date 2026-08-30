@@ -35,8 +35,8 @@ export class AuthService {
           name: 'NextStation26 Super Admin',
           email: superAdminEmail,
           role: 'Super-Admin',
-          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-          phone: '+880 1700-000000',
+          avatar: '/logo.png',
+          phone: '01895627138',
         },
       };
     }
@@ -50,8 +50,8 @@ export class AuthService {
           name: 'ArdhiMart Admin',
           email: adminEmail,
           role: 'Admin',
-          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-          phone: '+880 1700-111111',
+          avatar: '/logo.png',
+          phone: '01895627138',
         },
       };
     }
