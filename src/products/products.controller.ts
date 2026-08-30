@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   Query,
+  Header,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto, UpdateProductDto } from './dto/create-product.dto';
@@ -16,6 +17,7 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Get()
+  @Header('Cache-Control', 'public, max-age=60, s-maxage=300')
   findAll(
     @Query('category') category?: string,
     @Query('search') search?: string,
@@ -24,6 +26,7 @@ export class ProductsController {
   }
 
   @Get(':identifier')
+  @Header('Cache-Control', 'public, max-age=60, s-maxage=300')
   findOne(@Param('identifier') identifier: string) {
     return this.productsService.findOneBySlugOrId(identifier);
   }
