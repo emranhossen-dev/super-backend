@@ -21,7 +21,53 @@ export interface CustomerData {
 export class CustomersService {
   private syncedCustomers = new Map<string, CustomerData>();
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) {
+    // Initial demo customer records
+    const demoCustomers: CustomerData[] = [
+      {
+        id: 'cust-1',
+        uid: 'demo-uid-01',
+        name: 'Shamshed Rahman',
+        email: 'shamshed.dev@gmail.com',
+        phone: '01895627138',
+        avatar: '/logo.png',
+        provider: 'google.com',
+        joinedAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+        status: 'active',
+        totalOrders: 2,
+        totalSpent: 5650,
+        cartItems: [
+          {
+            id: '1',
+            title: 'Smart LED Digital Pen Holder',
+            price: 2450,
+            quantity: 1,
+            image: '/images/ardhimart-smart-pen-holder.webp',
+          },
+        ],
+      },
+      {
+        id: 'cust-2',
+        uid: 'demo-uid-02',
+        name: 'Rafiqul Islam',
+        email: 'rafiq.bd@example.com',
+        phone: '01700000000',
+        avatar: '/logo.png',
+        provider: 'password',
+        joinedAt: new Date(Date.now() - 86400000 * 3).toISOString(),
+        lastLogin: new Date(Date.now() - 3600000 * 5).toISOString(),
+        status: 'active',
+        totalOrders: 1,
+        totalSpent: 1800,
+        cartItems: [],
+      },
+    ];
+
+    demoCustomers.forEach((c) => {
+      this.syncedCustomers.set(c.email.toLowerCase(), c);
+    });
+  }
 
   async syncCustomer(data: CustomerData) {
     const key = (data.email || data.uid || data.phone || 'anonymous').toLowerCase();
@@ -34,7 +80,7 @@ export class CustomersService {
       email: data.email || existing?.email || '',
       avatar: data.avatar || existing?.avatar || '/logo.png',
       phone: data.phone || existing?.phone || 'N/A',
-      provider: data.provider || existing?.provider || 'password',
+      provider: data.provider || existing?.provider || 'google.com',
       cartItems: data.cartItems !== undefined ? data.cartItems : (existing?.cartItems || []),
       joinedAt: existing?.joinedAt || new Date().toISOString(),
       lastLogin: new Date().toISOString(),
@@ -67,6 +113,7 @@ export class CustomersService {
               email: order.customerEmail || 'customer@example.com',
               phone: order.customerPhone || 'N/A',
               avatar: '/logo.png',
+              provider: 'password',
               joinedAt: order.createdAt || new Date().toISOString(),
               lastLogin: order.createdAt || new Date().toISOString(),
               status: 'active',
