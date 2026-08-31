@@ -9,6 +9,7 @@ import { OrdersModule } from './orders/orders.module';
 import { CategoriesModule } from './categories/categories.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { CustomersModule } from './customers/customers.module';
+import { SettingsModule } from './settings/settings.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { CustomersModule } from './customers/customers.module';
     CategoriesModule,
     NotificationsModule,
     CustomersModule,
+    SettingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

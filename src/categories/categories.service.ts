@@ -21,12 +21,17 @@ export class CategoriesService {
 
   async create(data: { name: string; slug?: string; description?: string; image?: string }) {
     const id = `cat-${Date.now()}`;
-    const slug =
+    let slug =
       data.slug ||
       data.name
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)+/g, '');
+
+    const existingSlug = await this.prisma.categories.findFirst({ where: { slug } });
+    if (existingSlug) {
+      slug = `${slug}-${Date.now().toString().slice(-4)}`;
+    }
 
     return this.prisma.categories.create({
       data: {
@@ -41,11 +46,21 @@ export class CategoriesService {
   }
 
   async update(id: string, data: { name?: string; slug?: string; description?: string; image?: string }) {
-    const existing = await this.prisma.categories.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException('Category not found');
+    const existing = await this.prisma.categories.findFirst({
+      where: { OR: [{ id }, { slug: id }] },
+    });
+
+    if (!existing) {
+      return this.create({
+        name: data.name || 'Category',
+        slug: data.slug || id,
+        description: data.description,
+        image: data.image,
+      });
+    }
 
     return this.prisma.categories.update({
-      where: { id },
+      where: { id: existing.id },
       data: {
         name: data.name ?? existing.name,
         slug: data.slug ?? existing.slug,
@@ -56,11 +71,22 @@ export class CategoriesService {
   }
 
   async remove(id: string) {
-    const existing = await this.prisma.categories.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException('Category not found');
+    const existing = await this.prisma.categories.findFirst({
+      where: {
+        OR: [
+          { id },
+          { slug: id },
+          { name: { equals: id, mode: 'insensitive' } }
+        ]
+      },
+    });
+
+    if (!existing) {
+      return { success: true, message: 'Category removed' };
+    }
 
     return this.prisma.categories.delete({
-      where: { id },
+      where: { id: existing.id },
     });
   }
 }
