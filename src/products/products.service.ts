@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto, UpdateProductDto } from './dto/create-product.dto';
 
@@ -27,46 +27,33 @@ export class ProductsService {
 
     if (search && search.trim() !== '') {
       where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { category: { contains: search, mode: 'insensitive' } },
+        { title: { contains: search } },
+        { description: { contains: search } },
+        { sku: { contains: search } },
+        { brand: { contains: search } },
       ];
     }
 
-    const results = await this.prisma.products.findMany({
+    const products = await this.prisma.products.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        title: true,
-        brand: true,
-        urlSlug: true,
-        sku: true,
-        category: true,
-        buyingPrice: true,
-        price: true,
-        comparePrice: true,
-        stock: true,
-        status: true,
-        image: true,
-        shortDescription: true,
-        description: true,
-        createdAt: true,
-      },
     });
 
     if (isDefaultQuery) {
-      this.productsCache = results;
+      this.productsCache = products;
       this.cacheTimestamp = now;
     }
 
-    return results;
+    return products;
   }
 
   async findOneBySlugOrId(identifier: string) {
     const product = await this.prisma.products.findFirst({
       where: {
-        OR: [{ id: identifier }, { urlSlug: identifier }],
+        OR: [
+          { id: identifier },
+          { urlSlug: identifier },
+        ],
       },
     });
 
@@ -79,59 +66,143 @@ export class ProductsService {
 
   async create(dto: CreateProductDto) {
     const id = `prod-${Date.now()}`;
-    const slug = dto.urlSlug || dto.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-    const sku = dto.sku || `SKU-${Date.now().toString().slice(-6)}`;
+    const productTitle = dto.title || dto.name || 'Untitled Product';
 
-    const existingSlug = await this.prisma.products.findUnique({ where: { urlSlug: slug } });
-    if (existingSlug) {
-      throw new ConflictException(`Product URL Slug '${slug}' already exists`);
+    // Safe Slug Generation supporting both English and Bengali / Unicode Titles
+    let rawSlug = dto.urlSlug || '';
+    if (!rawSlug.trim()) {
+      const asciiSlug = productTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+      if (asciiSlug.length >= 2) {
+        rawSlug = asciiSlug;
+      } else {
+        rawSlug = `product-${Date.now().toString(36)}`;
+      }
     }
 
-    const created = await this.prisma.products.create({
-      data: {
-        id,
-        title: dto.title,
-        brand: dto.brand || null,
-        urlSlug: slug,
-        sku: sku,
-        category: dto.category,
-        buyingPrice: dto.buyingPrice ?? 0,
-        price: dto.price,
-        comparePrice: dto.comparePrice || null,
-        stock: dto.stock ?? 10,
-        lowStockThreshold: dto.lowStockThreshold ?? 5,
-        status: dto.status || 'in_stock',
-        image: dto.image,
-        shortDescription: dto.shortDescription || null,
-        description: dto.description,
-        color: dto.color || null,
-        material: dto.material || null,
-        warranty: dto.warranty || null,
-      },
-    });
+    // Ensure Slug Uniqueness
+    let slug = rawSlug;
+    let counter = 1;
+    while (await this.prisma.products.findUnique({ where: { urlSlug: slug } })) {
+      slug = `${rawSlug}-${counter}`;
+      counter++;
+    }
 
-    // Invalidate cache immediately on new product creation
-    this.productsCache = null;
-    return created;
+    // Ensure SKU Uniqueness
+    let baseSku = dto.sku || `SKU-${Date.now().toString().slice(-6)}`;
+    let sku = baseSku;
+    let skuCounter = 1;
+    while (await this.prisma.products.findUnique({ where: { sku: sku } })) {
+      sku = `${baseSku}-${skuCounter}`;
+      skuCounter++;
+    }
+
+    const category = dto.category || 'Electronics';
+    const price = Number(dto.price || 0);
+    const buyingPrice = dto.buyingPrice ? Number(dto.buyingPrice) : 0;
+    const comparePrice = dto.comparePrice && Number(dto.comparePrice) > 0 ? Number(dto.comparePrice) : null;
+    const image = dto.image || '/logo.png';
+    const description = dto.description || productTitle;
+
+    // Format array / object fields to string for Prisma DB
+    const galleryImages = Array.isArray(dto.galleryImages) ? dto.galleryImages.join(', ') : (dto.galleryImages || null);
+    const keywords = Array.isArray(dto.keywords) ? dto.keywords.join(', ') : (dto.keywords || null);
+    const tags = Array.isArray(dto.tags) ? dto.tags.join(', ') : (dto.tags || null);
+    const features = Array.isArray(dto.features) ? dto.features.join('\n') : (dto.features || null);
+    const seoKeywords = Array.isArray(dto.seoKeywords) ? dto.seoKeywords.join(', ') : (dto.seoKeywords || null);
+    const specifications = typeof dto.specifications === 'object' ? JSON.stringify(dto.specifications) : (dto.specifications || null);
+
+    try {
+      const created = await this.prisma.products.create({
+        data: {
+          id,
+          title: productTitle,
+          brand: dto.brand || null,
+          urlSlug: slug,
+          sku: sku,
+          category: category,
+          buyingPrice: buyingPrice,
+          price: price,
+          comparePrice: comparePrice,
+          stock: Number(dto.stock ?? 10),
+          lowStockThreshold: Number(dto.lowStockThreshold ?? 5),
+          status: dto.status || 'in_stock',
+          image: image,
+          galleryImages: galleryImages,
+          keywords: keywords,
+          tags: tags,
+          shortDescription: dto.shortDescription || null,
+          description: description,
+          features: features,
+          specifications: specifications,
+          usability: dto.usability || null,
+          color: dto.color || null,
+          material: dto.material || null,
+          warranty: dto.warranty || null,
+          metaTitle: dto.metaTitle || null,
+          metaDescription: dto.metaDescription || null,
+          seoKeywords: seoKeywords,
+        },
+      });
+
+      // Invalidate cache immediately on new product creation
+      this.productsCache = null;
+      return created;
+    } catch (err: any) {
+      console.error('[ProductsService] Error creating product:', err);
+      throw new BadRequestException(err.message || 'Failed to create product due to database error.');
+    }
   }
 
   async update(id: string, dto: UpdateProductDto) {
-    await this.findOneBySlugOrId(id);
+    const existing = await this.findOneBySlugOrId(id);
 
-    const updated = await this.prisma.products.update({
-      where: { id },
-      data: dto as any,
-    });
+    const updateData: any = {};
+    if (dto.title || dto.name) updateData.title = dto.title || dto.name;
+    if (dto.brand !== undefined) updateData.brand = dto.brand || null;
+    if (dto.urlSlug) updateData.urlSlug = dto.urlSlug;
+    if (dto.sku) updateData.sku = dto.sku;
+    if (dto.category) updateData.category = dto.category;
+    if (dto.buyingPrice !== undefined) updateData.buyingPrice = Number(dto.buyingPrice || 0);
+    if (dto.price !== undefined) updateData.price = Number(dto.price || 0);
+    if (dto.comparePrice !== undefined) updateData.comparePrice = dto.comparePrice && Number(dto.comparePrice) > 0 ? Number(dto.comparePrice) : null;
+    if (dto.stock !== undefined) updateData.stock = Number(dto.stock || 0);
+    if (dto.lowStockThreshold !== undefined) updateData.lowStockThreshold = Number(dto.lowStockThreshold || 5);
+    if (dto.status) updateData.status = dto.status;
+    if (dto.image) updateData.image = dto.image;
+    if (dto.galleryImages !== undefined) updateData.galleryImages = Array.isArray(dto.galleryImages) ? dto.galleryImages.join(', ') : (dto.galleryImages || null);
+    if (dto.keywords !== undefined) updateData.keywords = Array.isArray(dto.keywords) ? dto.keywords.join(', ') : (dto.keywords || null);
+    if (dto.tags !== undefined) updateData.tags = Array.isArray(dto.tags) ? dto.tags.join(', ') : (dto.tags || null);
+    if (dto.shortDescription !== undefined) updateData.shortDescription = dto.shortDescription || null;
+    if (dto.description) updateData.description = dto.description;
+    if (dto.features !== undefined) updateData.features = Array.isArray(dto.features) ? dto.features.join('\n') : (dto.features || null);
+    if (dto.specifications !== undefined) updateData.specifications = typeof dto.specifications === 'object' ? JSON.stringify(dto.specifications) : (dto.specifications || null);
+    if (dto.usability !== undefined) updateData.usability = dto.usability || null;
+    if (dto.color !== undefined) updateData.color = dto.color || null;
+    if (dto.material !== undefined) updateData.material = dto.material || null;
+    if (dto.warranty !== undefined) updateData.warranty = dto.warranty || null;
+    if (dto.metaTitle !== undefined) updateData.metaTitle = dto.metaTitle || null;
+    if (dto.metaDescription !== undefined) updateData.metaDescription = dto.metaDescription || null;
+    if (dto.seoKeywords !== undefined) updateData.seoKeywords = Array.isArray(dto.seoKeywords) ? dto.seoKeywords.join(', ') : (dto.seoKeywords || null);
 
-    // Invalidate cache immediately on update
-    this.productsCache = null;
-    return updated;
+    try {
+      const updated = await this.prisma.products.update({
+        where: { id: existing.id },
+        data: updateData,
+      });
+
+      // Invalidate cache immediately on update
+      this.productsCache = null;
+      return updated;
+    } catch (err: any) {
+      console.error('[ProductsService] Error updating product:', err);
+      throw new BadRequestException(err.message || 'Failed to update product due to database error.');
+    }
   }
 
   async remove(id: string) {
-    await this.findOneBySlugOrId(id);
+    const existing = await this.findOneBySlugOrId(id);
     const deleted = await this.prisma.products.delete({
-      where: { id },
+      where: { id: existing.id },
     });
 
     // Invalidate cache immediately on delete

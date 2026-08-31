@@ -1,165 +1,69 @@
-import {
-  IsString,
-  IsNumber,
-  IsOptional,
-  IsNotEmpty,
-  Min,
-} from 'class-validator';
+import { IsOptional, Allow } from 'class-validator';
 
 export class CreateProductDto {
-  @IsString()
-  @IsNotEmpty()
-  title: string;
-
-  @IsString()
-  @IsOptional()
-  brand?: string;
-
-  @IsString()
-  @IsOptional()
-  urlSlug?: string;
-
-  @IsString()
-  @IsOptional()
-  sku?: string;
-
-  @IsString()
-  @IsNotEmpty()
-  category: string;
-
-  @IsNumber()
-  @IsOptional()
-  @Min(0)
-  buyingPrice?: number;
-
-  @IsNumber()
-  @IsNotEmpty()
-  @Min(0)
-  price: number;
-
-  @IsNumber()
-  @IsOptional()
-  @Min(0)
-  comparePrice?: number;
-
-  @IsNumber()
-  @IsOptional()
-  @Min(0)
-  stock?: number;
-
-  @IsNumber()
-  @IsOptional()
-  @Min(0)
-  lowStockThreshold?: number;
-
-  @IsString()
-  @IsOptional()
-  status?: string;
-
-  @IsString()
-  @IsNotEmpty()
-  image: string;
-
-  @IsString()
-  @IsOptional()
-  shortDescription?: string;
-
-  @IsString()
-  @IsNotEmpty()
-  description: string;
-
-  @IsString()
-  @IsOptional()
-  color?: string;
-
-  @IsString()
-  @IsOptional()
-  material?: string;
-
-  @IsString()
-  @IsOptional()
-  warranty?: string;
-
-  @IsString()
-  @IsOptional()
-  metaTitle?: string;
-
-  @IsString()
-  @IsOptional()
-  metaDescription?: string;
+  @Allow() @IsOptional() title?: any;
+  @Allow() @IsOptional() name?: any;
+  @Allow() @IsOptional() brand?: any;
+  @Allow() @IsOptional() urlSlug?: any;
+  @Allow() @IsOptional() sku?: any;
+  @Allow() @IsOptional() category?: any;
+  @Allow() @IsOptional() buyingPrice?: any;
+  @Allow() @IsOptional() price?: any;
+  @Allow() @IsOptional() comparePrice?: any;
+  @Allow() @IsOptional() deliveryInsideDhaka?: any;
+  @Allow() @IsOptional() deliveryOutsideDhaka?: any;
+  @Allow() @IsOptional() stock?: any;
+  @Allow() @IsOptional() lowStockThreshold?: any;
+  @Allow() @IsOptional() status?: any;
+  @Allow() @IsOptional() image?: any;
+  @Allow() @IsOptional() galleryImages?: any;
+  @Allow() @IsOptional() shortDescription?: any;
+  @Allow() @IsOptional() description?: any;
+  @Allow() @IsOptional() usability?: any;
+  @Allow() @IsOptional() features?: any;
+  @Allow() @IsOptional() specifications?: any;
+  @Allow() @IsOptional() color?: any;
+  @Allow() @IsOptional() material?: any;
+  @Allow() @IsOptional() warranty?: any;
+  @Allow() @IsOptional() variantName?: any;
+  @Allow() @IsOptional() variantOptions?: any;
+  @Allow() @IsOptional() metaTitle?: any;
+  @Allow() @IsOptional() metaDescription?: any;
+  @Allow() @IsOptional() seoKeywords?: any;
+  @Allow() @IsOptional() keywords?: any;
+  @Allow() @IsOptional() tags?: any;
 }
 
 export class UpdateProductDto {
-  @IsString()
-  @IsOptional()
-  title?: string;
-
-  @IsString()
-  @IsOptional()
-  brand?: string;
-
-  @IsString()
-  @IsOptional()
-  urlSlug?: string;
-
-  @IsString()
-  @IsOptional()
-  sku?: string;
-
-  @IsString()
-  @IsOptional()
-  category?: string;
-
-  @IsNumber()
-  @IsOptional()
-  @Min(0)
-  buyingPrice?: number;
-
-  @IsNumber()
-  @IsOptional()
-  @Min(0)
-  price?: number;
-
-  @IsNumber()
-  @IsOptional()
-  @Min(0)
-  comparePrice?: number;
-
-  @IsNumber()
-  @IsOptional()
-  @Min(0)
-  stock?: number;
-
-  @IsNumber()
-  @IsOptional()
-  @Min(0)
-  lowStockThreshold?: number;
-
-  @IsString()
-  @IsOptional()
-  status?: string;
-
-  @IsString()
-  @IsOptional()
-  image?: string;
-
-  @IsString()
-  @IsOptional()
-  shortDescription?: string;
-
-  @IsString()
-  @IsOptional()
-  description?: string;
-
-  @IsString()
-  @IsOptional()
-  color?: string;
-
-  @IsString()
-  @IsOptional()
-  material?: string;
-
-  @IsString()
-  @IsOptional()
-  warranty?: string;
+  @Allow() @IsOptional() title?: any;
+  @Allow() @IsOptional() name?: any;
+  @Allow() @IsOptional() brand?: any;
+  @Allow() @IsOptional() urlSlug?: any;
+  @Allow() @IsOptional() sku?: any;
+  @Allow() @IsOptional() category?: any;
+  @Allow() @IsOptional() buyingPrice?: any;
+  @Allow() @IsOptional() price?: any;
+  @Allow() @IsOptional() comparePrice?: any;
+  @Allow() @IsOptional() deliveryInsideDhaka?: any;
+  @Allow() @IsOptional() deliveryOutsideDhaka?: any;
+  @Allow() @IsOptional() stock?: any;
+  @Allow() @IsOptional() lowStockThreshold?: any;
+  @Allow() @IsOptional() status?: any;
+  @Allow() @IsOptional() image?: any;
+  @Allow() @IsOptional() galleryImages?: any;
+  @Allow() @IsOptional() shortDescription?: any;
+  @Allow() @IsOptional() description?: any;
+  @Allow() @IsOptional() usability?: any;
+  @Allow() @IsOptional() features?: any;
+  @Allow() @IsOptional() specifications?: any;
+  @Allow() @IsOptional() color?: any;
+  @Allow() @IsOptional() material?: any;
+  @Allow() @IsOptional() warranty?: any;
+  @Allow() @IsOptional() variantName?: any;
+  @Allow() @IsOptional() variantOptions?: any;
+  @Allow() @IsOptional() metaTitle?: any;
+  @Allow() @IsOptional() metaDescription?: any;
+  @Allow() @IsOptional() seoKeywords?: any;
+  @Allow() @IsOptional() keywords?: any;
+  @Allow() @IsOptional() tags?: any;
 }
