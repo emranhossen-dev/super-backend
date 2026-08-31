@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -7,20 +7,58 @@ export class CategoriesService {
 
   async findAll() {
     return this.prisma.categories.findMany({
-      orderBy: { name: 'asc' },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
-  async create(name: string, description?: string) {
+  async findOne(id: string) {
+    const cat = await this.prisma.categories.findFirst({
+      where: { OR: [{ id }, { slug: id }] },
+    });
+    if (!cat) throw new NotFoundException('Category not found');
+    return cat;
+  }
+
+  async create(data: { name: string; slug?: string; description?: string }) {
     const id = `cat-${Date.now()}`;
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    const slug =
+      data.slug ||
+      data.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)+/g, '');
+
     return this.prisma.categories.create({
       data: {
         id,
-        name,
+        name: data.name,
         slug,
-        description,
+        description: data.description || null,
+        productCount: 0,
       },
+    });
+  }
+
+  async update(id: string, data: { name?: string; slug?: string; description?: string }) {
+    const existing = await this.prisma.categories.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Category not found');
+
+    return this.prisma.categories.update({
+      where: { id },
+      data: {
+        name: data.name ?? existing.name,
+        slug: data.slug ?? existing.slug,
+        description: data.description !== undefined ? data.description : existing.description,
+      },
+    });
+  }
+
+  async remove(id: string) {
+    const existing = await this.prisma.categories.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Category not found');
+
+    return this.prisma.categories.delete({
+      where: { id },
     });
   }
 }
