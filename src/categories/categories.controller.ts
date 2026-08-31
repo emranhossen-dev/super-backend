@@ -16,14 +16,14 @@ export class CategoriesController {
   }
 
   @Post()
-  create(@Body() body: { name: string; slug?: string; description?: string }) {
+  create(@Body() body: { name: string; slug?: string; description?: string; image?: string }) {
     return this.categoriesService.create(body);
   }
 
   @Put(':id')
   update(
     @Param('id') id: string,
-    @Body() body: { name?: string; slug?: string; description?: string },
+    @Body() body: { name?: string; slug?: string; description?: string; image?: string },
   ) {
     return this.categoriesService.update(id, body);
   }

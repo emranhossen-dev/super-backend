@@ -19,7 +19,7 @@ export class CategoriesService {
     return cat;
   }
 
-  async create(data: { name: string; slug?: string; description?: string }) {
+  async create(data: { name: string; slug?: string; description?: string; image?: string }) {
     const id = `cat-${Date.now()}`;
     const slug =
       data.slug ||
@@ -34,12 +34,13 @@ export class CategoriesService {
         name: data.name,
         slug,
         description: data.description || null,
+        image: data.image || null,
         productCount: 0,
       },
     });
   }
 
-  async update(id: string, data: { name?: string; slug?: string; description?: string }) {
+  async update(id: string, data: { name?: string; slug?: string; description?: string; image?: string }) {
     const existing = await this.prisma.categories.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Category not found');
 
@@ -49,6 +50,7 @@ export class CategoriesService {
         name: data.name ?? existing.name,
         slug: data.slug ?? existing.slug,
         description: data.description !== undefined ? data.description : existing.description,
+        image: data.image !== undefined ? data.image : existing.image,
       },
     });
   }

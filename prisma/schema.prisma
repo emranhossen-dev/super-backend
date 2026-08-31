@@ -45,6 +45,7 @@ model categories {
   name         String
   slug         String    @unique
   description  String?
+  image        String?
   productCount Int?      @default(0)
   createdAt    DateTime? @default(now())
   updatedAt    DateTime? @default(now()) @updatedAt
