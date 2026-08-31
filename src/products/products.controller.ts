@@ -41,6 +41,12 @@ export class ProductsController {
     return this.productsService.update(id, dto);
   }
 
+  // Bulk delete — must be before :id route
+  @Delete('bulk')
+  bulkRemove(@Body() body: { ids: string[] }) {
+    return this.productsService.bulkRemove(body.ids || []);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.productsService.remove(id);

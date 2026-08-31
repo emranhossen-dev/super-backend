@@ -209,4 +209,12 @@ export class ProductsService {
     this.productsCache = null;
     return deleted;
   }
+
+  async bulkRemove(ids: string[]) {
+    const result = await this.prisma.products.deleteMany({
+      where: { id: { in: ids } },
+    });
+    this.productsCache = null;
+    return { deleted: result.count };
+  }
 }
