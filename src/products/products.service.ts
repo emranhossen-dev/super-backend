@@ -200,7 +200,16 @@ export class ProductsService {
   }
 
   async remove(id: string) {
-    const existing = await this.findOneBySlugOrId(id);
+    // Gracefully handle not found — don't throw 404
+    const existing = await this.prisma.products.findFirst({
+      where: { OR: [{ id }, { urlSlug: id }] },
+    });
+
+    if (!existing) {
+      this.productsCache = null;
+      return { success: true, message: 'Product not found or already deleted' };
+    }
+
     const deleted = await this.prisma.products.delete({
       where: { id: existing.id },
     });
