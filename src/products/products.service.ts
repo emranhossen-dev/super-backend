@@ -6,7 +6,7 @@ import { CreateProductDto, UpdateProductDto } from './dto/create-product.dto';
 export class ProductsService {
   private productsCache: any = null;
   private cacheTimestamp: number = 0;
-  private readonly CACHE_TTL_MS = 60 * 1000; // 60 seconds microsecond RAM cache
+  private readonly CACHE_TTL_MS = 5 * 1000; // 5 seconds micro RAM cache
 
   constructor(private readonly prisma: PrismaService) {}
 

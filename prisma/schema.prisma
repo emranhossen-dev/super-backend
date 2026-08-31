@@ -41,14 +41,17 @@ model banner_cms {
 }
 
 model categories {
-  id           String    @id @default(uuid())
+  id           String       @id @default(uuid())
   name         String
-  slug         String    @unique
+  slug         String       @unique
   description  String?
   image        String?
-  productCount Int?      @default(0)
-  createdAt    DateTime? @default(now())
-  updatedAt    DateTime? @default(now()) @updatedAt
+  productCount Int?         @default(0)
+  parentId     String?      // null = top-level category
+  parent       categories?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children     categories[] @relation("CategoryHierarchy")
+  createdAt    DateTime?    @default(now())
+  updatedAt    DateTime?    @default(now()) @updatedAt
 }
 
 model coupons {

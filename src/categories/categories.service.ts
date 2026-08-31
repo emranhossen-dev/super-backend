@@ -5,8 +5,30 @@ import { PrismaService } from '../prisma/prisma.service';
 export class CategoriesService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // Get all top-level categories with their subcategories
   async findAll() {
     return this.prisma.categories.findMany({
+      where: { parentId: null }, // only top-level
+      orderBy: { createdAt: 'desc' },
+      include: {
+        children: {
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+  }
+
+  // Get flat list of all categories (for product form dropdowns)
+  async findAllFlat() {
+    return this.prisma.categories.findMany({
+      orderBy: [{ parentId: 'asc' }, { createdAt: 'desc' }],
+    });
+  }
+
+  // Get subcategories of a parent
+  async findChildren(parentId: string) {
+    return this.prisma.categories.findMany({
+      where: { parentId },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -14,12 +36,19 @@ export class CategoriesService {
   async findOne(id: string) {
     const cat = await this.prisma.categories.findFirst({
       where: { OR: [{ id }, { slug: id }] },
+      include: { children: true },
     });
     if (!cat) throw new NotFoundException('Category not found');
     return cat;
   }
 
-  async create(data: { name: string; slug?: string; description?: string; image?: string }) {
+  async create(data: {
+    name: string;
+    slug?: string;
+    description?: string;
+    image?: string;
+    parentId?: string | null;
+  }) {
     const id = `cat-${Date.now()}`;
     let slug =
       data.slug ||
@@ -41,11 +70,19 @@ export class CategoriesService {
         description: data.description || null,
         image: data.image || null,
         productCount: 0,
+        parentId: data.parentId || null,
       },
+      include: { children: true, parent: true },
     });
   }
 
-  async update(id: string, data: { name?: string; slug?: string; description?: string; image?: string }) {
+  async update(id: string, data: {
+    name?: string;
+    slug?: string;
+    description?: string;
+    image?: string;
+    parentId?: string | null;
+  }) {
     const existing = await this.prisma.categories.findFirst({
       where: { OR: [{ id }, { slug: id }] },
     });
@@ -56,6 +93,7 @@ export class CategoriesService {
         slug: data.slug || id,
         description: data.description,
         image: data.image,
+        parentId: data.parentId,
       });
     }
 
@@ -66,7 +104,9 @@ export class CategoriesService {
         slug: data.slug ?? existing.slug,
         description: data.description !== undefined ? data.description : existing.description,
         image: data.image !== undefined ? data.image : existing.image,
+        parentId: data.parentId !== undefined ? data.parentId : existing.parentId,
       },
+      include: { children: true },
     });
   }
 
@@ -84,6 +124,12 @@ export class CategoriesService {
     if (!existing) {
       return { success: true, message: 'Category removed' };
     }
+
+    // Move children to parent's parent (or make them top-level) before deleting
+    await this.prisma.categories.updateMany({
+      where: { parentId: existing.id },
+      data: { parentId: existing.parentId || null },
+    });
 
     return this.prisma.categories.delete({
       where: { id: existing.id },
