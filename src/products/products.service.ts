@@ -4,21 +4,9 @@ import { CreateProductDto, UpdateProductDto } from './dto/create-product.dto';
 
 @Injectable()
 export class ProductsService {
-  private productsCache: any = null;
-  private cacheTimestamp: number = 0;
-  private readonly CACHE_TTL_MS = 5 * 1000; // 5 seconds micro RAM cache
-
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(category?: string, search?: string) {
-    const isDefaultQuery = (!category || category === 'All') && (!search || search.trim() === '');
-    const now = Date.now();
-
-    // 1ms RAM Response if cache is valid
-    if (isDefaultQuery && this.productsCache && now - this.cacheTimestamp < this.CACHE_TTL_MS) {
-      return this.productsCache;
-    }
-
     const where: any = {};
 
     if (category && category !== 'All') {
@@ -27,24 +15,17 @@ export class ProductsService {
 
     if (search && search.trim() !== '') {
       where.OR = [
-        { title: { contains: search } },
-        { description: { contains: search } },
-        { sku: { contains: search } },
-        { brand: { contains: search } },
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { sku: { contains: search, mode: 'insensitive' } },
+        { brand: { contains: search, mode: 'insensitive' } },
       ];
     }
 
-    const products = await this.prisma.products.findMany({
+    return this.prisma.products.findMany({
       where,
       orderBy: { createdAt: 'desc' },
     });
-
-    if (isDefaultQuery) {
-      this.productsCache = products;
-      this.cacheTimestamp = now;
-    }
-
-    return products;
   }
 
   async findOneBySlugOrId(identifier: string) {
@@ -144,8 +125,6 @@ export class ProductsService {
         },
       });
 
-      // Invalidate cache immediately on new product creation
-      this.productsCache = null;
       return created;
     } catch (err: any) {
       console.error('[ProductsService] Error creating product:', err);
@@ -190,8 +169,6 @@ export class ProductsService {
         data: updateData,
       });
 
-      // Invalidate cache immediately on update
-      this.productsCache = null;
       return updated;
     } catch (err: any) {
       console.error('[ProductsService] Error updating product:', err);
@@ -206,24 +183,18 @@ export class ProductsService {
     });
 
     if (!existing) {
-      this.productsCache = null;
       return { success: true, message: 'Product not found or already deleted' };
     }
 
-    const deleted = await this.prisma.products.delete({
+    return this.prisma.products.delete({
       where: { id: existing.id },
     });
-
-    // Invalidate cache immediately on delete
-    this.productsCache = null;
-    return deleted;
   }
 
   async bulkRemove(ids: string[]) {
     const result = await this.prisma.products.deleteMany({
       where: { id: { in: ids } },
     });
-    this.productsCache = null;
     return { deleted: result.count };
   }
 }

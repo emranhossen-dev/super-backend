@@ -17,7 +17,7 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Get()
-  @Header('Cache-Control', 'public, max-age=5, s-maxage=10')
+  @Header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
   findAll(
     @Query('category') category?: string,
     @Query('search') search?: string,
@@ -26,7 +26,7 @@ export class ProductsController {
   }
 
   @Get(':identifier')
-  @Header('Cache-Control', 'public, max-age=5, s-maxage=10')
+  @Header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
   findOne(@Param('identifier') identifier: string) {
     return this.productsService.findOneBySlugOrId(identifier);
   }
