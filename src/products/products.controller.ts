@@ -25,6 +25,15 @@ export class ProductsController {
     return this.productsService.findAll(category, search);
   }
 
+  @Get('check-sku')
+  @Header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+  checkSku(
+    @Query('sku') sku: string,
+    @Query('excludeId') excludeId?: string,
+  ) {
+    return this.productsService.checkSkuAvailability(sku, excludeId);
+  }
+
   @Get(':identifier')
   @Header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
   findOne(@Param('identifier') identifier: string) {

@@ -45,6 +45,78 @@ export class ProductsService {
     return product;
   }
 
+  generateSkuFromTitle(titleText: string, category?: string): string {
+    const clean = (titleText || '')
+      .toUpperCase()
+      .replace(/[^A-Z0-9\s]/g, '')
+      .trim();
+
+    let prefix = '';
+    if (clean) {
+      const words = clean.split(/\s+/).filter(Boolean);
+      if (words.length >= 4) {
+        prefix = words.slice(0, 4).map((w) => w[0]).join('');
+      } else if (words.length === 3) {
+        prefix = words.map((w) => w[0]).join('');
+      } else if (words.length === 2) {
+        prefix = (words[0].slice(0, 2) + words[1].slice(0, 2)).slice(0, 4);
+      } else if (words.length === 1) {
+        const w = words[0];
+        const consonants = w.replace(/[AEIOU]/g, '');
+        if (consonants.length >= 3) {
+          prefix = consonants.slice(0, 4);
+        } else {
+          prefix = w.slice(0, 4);
+        }
+      }
+    }
+
+    if (!prefix || prefix.length < 2) {
+      const cleanCat = (category || '')
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '')
+        .trim();
+      if (cleanCat.length >= 3) {
+        prefix = cleanCat.slice(0, 4);
+      } else {
+        prefix = 'PRD';
+      }
+    }
+
+    prefix = prefix.slice(0, 4);
+
+    const maxDigits = Math.max(2, 8 - 1 - prefix.length);
+    const minVal = Math.pow(10, maxDigits - 1);
+    const maxVal = Math.pow(10, maxDigits) - 1;
+    const randomDigits = Math.floor(minVal + Math.random() * (maxVal - minVal + 1));
+    const generated = `${prefix}-${randomDigits}`;
+    return generated.slice(0, 8);
+  }
+
+  async checkSkuAvailability(sku: string, excludeId?: string) {
+    if (!sku || !sku.trim()) {
+      return { available: false, sku: '', message: 'SKU code is required' };
+    }
+
+    const cleanSku = sku.trim().toUpperCase();
+    if (cleanSku.length > 8) {
+      return { available: false, sku: cleanSku, message: 'SKU must be maximum 8 characters' };
+    }
+
+    const existing = await this.prisma.products.findFirst({
+      where: {
+        sku: cleanSku,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    });
+
+    return {
+      available: !existing,
+      sku: cleanSku,
+      message: existing ? 'SKU code is already in use by another product' : 'SKU code is available',
+    };
+  }
+
   async create(dto: CreateProductDto) {
     const id = `prod-${Date.now()}`;
     const productTitle = dto.title || dto.name || 'Untitled Product';
@@ -68,12 +140,18 @@ export class ProductsService {
       counter++;
     }
 
-    // Ensure SKU Uniqueness
-    let baseSku = dto.sku || `SKU-${Date.now().toString().slice(-6)}`;
-    let sku = baseSku;
+    // Ensure SKU Uniqueness & Max 8 Characters Limit
+    let rawSku = (dto.sku || '').trim().toUpperCase();
+    if (!rawSku || rawSku.length > 8) {
+      rawSku = this.generateSkuFromTitle(productTitle, dto.category);
+    }
+
+    let sku = rawSku.slice(0, 8);
     let skuCounter = 1;
-    while (await this.prisma.products.findUnique({ where: { sku: sku } })) {
-      sku = `${baseSku}-${skuCounter}`;
+    while (await this.prisma.products.findFirst({ where: { sku: sku } })) {
+      const suffix = `${skuCounter}`;
+      const base = rawSku.slice(0, Math.max(1, 8 - suffix.length));
+      sku = `${base}${suffix}`.slice(0, 8);
       skuCounter++;
     }
 
@@ -139,7 +217,16 @@ export class ProductsService {
     if (dto.title || dto.name) updateData.title = dto.title || dto.name;
     if (dto.brand !== undefined) updateData.brand = dto.brand || null;
     if (dto.urlSlug) updateData.urlSlug = dto.urlSlug;
-    if (dto.sku) updateData.sku = dto.sku;
+    if (dto.sku) {
+      const cleanSku = dto.sku.trim().toUpperCase().slice(0, 8);
+      if (cleanSku !== existing.sku) {
+        const skuCheck = await this.checkSkuAvailability(cleanSku, existing.id);
+        if (!skuCheck.available) {
+          throw new ConflictException(skuCheck.message);
+        }
+      }
+      updateData.sku = cleanSku;
+    }
     if (dto.category) updateData.category = dto.category;
     if (dto.buyingPrice !== undefined) updateData.buyingPrice = Number(dto.buyingPrice || 0);
     if (dto.price !== undefined) updateData.price = Number(dto.price || 0);
