@@ -197,6 +197,8 @@ export class ProductsService {
           color: dto.color || null,
           material: dto.material || null,
           warranty: dto.warranty || null,
+          deliveryInsideDhaka: dto.deliveryInsideDhaka !== undefined && dto.deliveryInsideDhaka !== null && dto.deliveryInsideDhaka !== '' ? Number(dto.deliveryInsideDhaka) : 70,
+          deliveryOutsideDhaka: dto.deliveryOutsideDhaka !== undefined && dto.deliveryOutsideDhaka !== null && dto.deliveryOutsideDhaka !== '' ? Number(dto.deliveryOutsideDhaka) : 130,
           metaTitle: dto.metaTitle || null,
           metaDescription: dto.metaDescription || null,
           seoKeywords: seoKeywords,
@@ -246,6 +248,8 @@ export class ProductsService {
     if (dto.color !== undefined) updateData.color = dto.color || null;
     if (dto.material !== undefined) updateData.material = dto.material || null;
     if (dto.warranty !== undefined) updateData.warranty = dto.warranty || null;
+    if (dto.deliveryInsideDhaka !== undefined) updateData.deliveryInsideDhaka = dto.deliveryInsideDhaka !== null && dto.deliveryInsideDhaka !== '' ? Number(dto.deliveryInsideDhaka) : 70;
+    if (dto.deliveryOutsideDhaka !== undefined) updateData.deliveryOutsideDhaka = dto.deliveryOutsideDhaka !== null && dto.deliveryOutsideDhaka !== '' ? Number(dto.deliveryOutsideDhaka) : 130;
     if (dto.metaTitle !== undefined) updateData.metaTitle = dto.metaTitle || null;
     if (dto.metaDescription !== undefined) updateData.metaDescription = dto.metaDescription || null;
     if (dto.seoKeywords !== undefined) updateData.seoKeywords = Array.isArray(dto.seoKeywords) ? dto.seoKeywords.join(', ') : (dto.seoKeywords || null);
