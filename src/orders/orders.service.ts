@@ -2,12 +2,14 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto, UpdateOrderStatusDto } from './dto/create-order.dto';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
+import { MetaService } from '../meta/meta.service';
 
 @Injectable()
 export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsGateway: NotificationsGateway,
+    private readonly metaService: MetaService,
   ) {}
 
   private async getNextOrderNumber(): Promise<number> {
@@ -26,7 +28,10 @@ export class OrdersService {
     return maxId + 1;
   }
 
-  async create(dto: CreateOrderDto) {
+  async create(
+    dto: CreateOrderDto,
+    clientContext?: { clientIp?: string; userAgent?: string },
+  ) {
     if (!dto.items || dto.items.length === 0) {
       throw new BadRequestException('Order must contain at least one item');
     }
@@ -110,6 +115,17 @@ export class OrdersService {
       });
     } catch (err) {
       console.warn('Real-time socket notification broadcast fallback:', err);
+    }
+
+    // Trigger Meta Conversions API (CAPI) Server-Side Purchase Event
+    try {
+      this.metaService
+        .sendPurchaseEvent(order, clientContext)
+        .catch((err) =>
+          console.warn('[OrdersService] Meta CAPI dispatch error:', err),
+        );
+    } catch (capiErr) {
+      console.warn('[OrdersService] Failed to trigger Meta CAPI:', capiErr);
     }
 
     return order;

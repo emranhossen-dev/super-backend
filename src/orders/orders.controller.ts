@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   Query,
+  Req,
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto, UpdateOrderStatusDto } from './dto/create-order.dto';
@@ -16,8 +17,16 @@ export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Post()
-  create(@Body() dto: CreateOrderDto) {
-    return this.ordersService.create(dto);
+  create(@Body() dto: CreateOrderDto, @Req() req: any) {
+    const rawIp =
+      req?.headers?.['x-forwarded-for'] ||
+      req?.socket?.remoteAddress ||
+      req?.ip;
+    const clientIp =
+      typeof rawIp === 'string' ? rawIp.split(',')[0].trim() : undefined;
+    const userAgent = req?.headers?.['user-agent'];
+
+    return this.ordersService.create(dto, { clientIp, userAgent });
   }
 
   @Get()

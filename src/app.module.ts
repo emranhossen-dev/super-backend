@@ -10,6 +10,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { CustomersModule } from './customers/customers.module';
 import { SettingsModule } from './settings/settings.module';
+import { MetaModule } from './meta/meta.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { SettingsModule } from './settings/settings.module';
     NotificationsModule,
     CustomersModule,
     SettingsModule,
+    MetaModule,
   ],
   controllers: [AppController],
   providers: [AppService],
