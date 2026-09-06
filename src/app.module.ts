@@ -11,6 +11,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { CustomersModule } from './customers/customers.module';
 import { SettingsModule } from './settings/settings.module';
 import { MetaModule } from './meta/meta.module';
+import { CouponsModule } from './coupons/coupons.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { MetaModule } from './meta/meta.module';
     CustomersModule,
     SettingsModule,
     MetaModule,
+    CouponsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
