@@ -46,51 +46,41 @@ export class ProductsService {
   }
 
   generateSkuFromTitle(titleText: string, category?: string): string {
-    const clean = (titleText || '')
+    const stopWords = new Set([
+      'THE', 'AND', 'FOR', 'WITH', 'NEW', 'HOT', 'BEST', 'PRO', 'PLUS',
+      'ER', 'O', 'EBONG', 'JONNO', 'NIYE', 'SHUNDOR', 'ORIGINAL'
+    ]);
+
+    const cleanTitle = (titleText || '')
       .toUpperCase()
-      .replace(/[^A-Z0-9\s]/g, '')
+      .replace(/[^A-Z0-9\s]/g, ' ')
       .trim();
 
-    let prefix = '';
-    if (clean) {
-      const words = clean.split(/\s+/).filter(Boolean);
-      if (words.length >= 4) {
-        prefix = words.slice(0, 4).map((w) => w[0]).join('');
-      } else if (words.length === 3) {
-        prefix = words.map((w) => w[0]).join('');
-      } else if (words.length === 2) {
-        prefix = (words[0].slice(0, 2) + words[1].slice(0, 2)).slice(0, 4);
-      } else if (words.length === 1) {
-        const w = words[0];
-        const consonants = w.replace(/[AEIOU]/g, '');
-        if (consonants.length >= 3) {
-          prefix = consonants.slice(0, 4);
-        } else {
-          prefix = w.slice(0, 4);
-        }
-      }
-    }
+    const words = cleanTitle.split(/\s+/).filter((w) => w.length > 0 && !stopWords.has(w));
 
-    if (!prefix || prefix.length < 2) {
-      const cleanCat = (category || '')
+    let part1 = '';
+    let part2 = '';
+
+    if (words.length >= 2) {
+      part1 = words[0].slice(0, 3).padEnd(3, 'X');
+      part2 = words[1].slice(0, 3).padEnd(3, 'Y');
+    } else if (words.length === 1) {
+      part1 = words[0].slice(0, 3).padEnd(3, 'X');
+      part2 = (words[0].slice(3, 6) || (category || 'PRD').slice(0, 3)).padEnd(3, 'Y');
+    } else {
+      const cleanCat = (category || 'PRD')
         .toUpperCase()
         .replace(/[^A-Z0-9]/g, '')
         .trim();
-      if (cleanCat.length >= 3) {
-        prefix = cleanCat.slice(0, 4);
-      } else {
-        prefix = 'PRD';
-      }
+      part1 = cleanCat.slice(0, 3).padEnd(3, 'P');
+      part2 = 'ITM';
     }
 
-    prefix = prefix.slice(0, 4);
+    part1 = part1.slice(0, 3).toUpperCase();
+    part2 = part2.slice(0, 3).toUpperCase();
 
-    const maxDigits = Math.max(2, 8 - 1 - prefix.length);
-    const minVal = Math.pow(10, maxDigits - 1);
-    const maxVal = Math.pow(10, maxDigits) - 1;
-    const randomDigits = Math.floor(minVal + Math.random() * (maxVal - minVal + 1));
-    const generated = `${prefix}-${randomDigits}`;
-    return generated.slice(0, 8);
+    const randomDigits = Math.floor(100 + Math.random() * 900); // 3 digits (100-999)
+    return `${part1}-${part2}-${randomDigits}`.slice(0, 11);
   }
 
   async checkSkuAvailability(sku: string, excludeId?: string) {
@@ -99,8 +89,8 @@ export class ProductsService {
     }
 
     const cleanSku = sku.trim().toUpperCase();
-    if (cleanSku.length > 8) {
-      return { available: false, sku: cleanSku, message: 'SKU must be maximum 8 characters' };
+    if (cleanSku.length > 11) {
+      return { available: false, sku: cleanSku, message: 'SKU must be maximum 11 characters' };
     }
 
     const existing = await this.prisma.products.findFirst({
@@ -140,18 +130,18 @@ export class ProductsService {
       counter++;
     }
 
-    // Ensure SKU Uniqueness & Max 8 Characters Limit
+    // Ensure SKU Uniqueness & Max 11 Characters Limit
     let rawSku = (dto.sku || '').trim().toUpperCase();
-    if (!rawSku || rawSku.length > 8) {
+    if (!rawSku || rawSku.length > 11) {
       rawSku = this.generateSkuFromTitle(productTitle, dto.category);
     }
 
-    let sku = rawSku.slice(0, 8);
+    let sku = rawSku.slice(0, 11);
     let skuCounter = 1;
     while (await this.prisma.products.findFirst({ where: { sku: sku } })) {
       const suffix = `${skuCounter}`;
-      const base = rawSku.slice(0, Math.max(1, 8 - suffix.length));
-      sku = `${base}${suffix}`.slice(0, 8);
+      const base = rawSku.slice(0, Math.max(1, 11 - suffix.length));
+      sku = `${base}${suffix}`.slice(0, 11);
       skuCounter++;
     }
 
@@ -220,7 +210,7 @@ export class ProductsService {
     if (dto.brand !== undefined) updateData.brand = dto.brand || null;
     if (dto.urlSlug) updateData.urlSlug = dto.urlSlug;
     if (dto.sku) {
-      const cleanSku = dto.sku.trim().toUpperCase().slice(0, 8);
+      const cleanSku = dto.sku.trim().toUpperCase().slice(0, 11);
       if (cleanSku !== existing.sku) {
         const skuCheck = await this.checkSkuAvailability(cleanSku, existing.id);
         if (!skuCheck.available) {
