@@ -209,5 +209,24 @@ model store_settings {
   enableCardImageAutoSlide    Boolean? @default(true)
   enableGridCarouselAutoSlide Boolean? @default(true)
   autoSlideSpeed              Int?     @default(3000)
+  enablePromoModal            Boolean? @default(true)
   updatedAt                   DateTime? @default(now()) @updatedAt
+}
+
+model reviews {
+  id          String    @id @default(uuid())
+  userName    String
+  rating      Int       @default(5)
+  comment     String
+  avatar      String?   @default("/logo.png")
+  image       String?
+  role        String?   @default("Verified Buyer")
+  productId   String?
+  isHomepage  Boolean?  @default(false)
+  status      String?   @default("approved")
+  createdAt   DateTime? @default(now())
+  updatedAt   DateTime? @default(now()) @updatedAt
+
+  @@index([productId])
+  @@index([isHomepage])
 }

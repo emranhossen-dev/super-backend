@@ -12,6 +12,7 @@ import { CustomersModule } from './customers/customers.module';
 import { SettingsModule } from './settings/settings.module';
 import { MetaModule } from './meta/meta.module';
 import { CouponsModule } from './coupons/coupons.module';
+import { ReviewsModule } from './reviews/reviews.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { CouponsModule } from './coupons/coupons.module';
     SettingsModule,
     MetaModule,
     CouponsModule,
+    ReviewsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

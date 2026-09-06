@@ -11,7 +11,7 @@ export class SettingsService {
     });
 
     if (!settings) {
-      settings = await this.prisma.store_settings.create({
+      settings = await (this.prisma as any).store_settings.create({
         data: {
           id: 'default',
           storeName: 'ArdhiMart',
@@ -21,6 +21,7 @@ export class SettingsService {
           enableCardImageAutoSlide: true,
           enableGridCarouselAutoSlide: true,
           autoSlideSpeed: 3000,
+          enablePromoModal: true,
         },
       });
     }
@@ -30,7 +31,7 @@ export class SettingsService {
 
   async updateSettings(data: any) {
     await this.getSettings(); // ensure record exists
-    return this.prisma.store_settings.update({
+    return (this.prisma as any).store_settings.update({
       where: { id: 'default' },
       data: {
         storeName: data.storeName,
@@ -47,6 +48,7 @@ export class SettingsService {
         enableCardImageAutoSlide: data.enableCardImageAutoSlide !== undefined ? Boolean(data.enableCardImageAutoSlide) : undefined,
         enableGridCarouselAutoSlide: data.enableGridCarouselAutoSlide !== undefined ? Boolean(data.enableGridCarouselAutoSlide) : undefined,
         autoSlideSpeed: data.autoSlideSpeed !== undefined ? Number(data.autoSlideSpeed) : undefined,
+        enablePromoModal: data.enablePromoModal !== undefined ? Boolean(data.enablePromoModal) : undefined,
       },
     });
   }
